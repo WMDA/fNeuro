@@ -7,6 +7,7 @@ from decouple import config
 import os
 import pandas as pd
 import scipy.stats as stats
+from fNeuro.bayesian.bayesian import bayesian_cluster_info, bayes_factor_upper_bound
 import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning) #Filterout all the nilearn user warnings
 
@@ -460,111 +461,31 @@ def get_peak_voxel(base_dir: str,
     return pd.concat((participant_df.reset_index(drop=True), pd.DataFrame(peak_voxel, columns=coordinates['names'])), axis=1)
 
 
-def bf_upper_bound(p: float) -> float:
-     '''
-     Function to calculate the bayes factor upper bound
+def load_cluster_csv(path: str, csv_name: str) -> pd.DataFrame:
 
-     1/-ep log p
+    '''
+    Function to load the cluster csv. Returns csv
+    or prints no significant clusters 
 
-     where e is natural base
-     p is p value
-     and log is natural log
-
-     Parameters
-     ----------
-     p: float
-         p value
-     
-     Returns
-     ------
-     float: bayes factor upper bound
-     '''
-     return 1/((-np.e * p) * np.log(p))
-
-def fraction_to_decimal_odds(numerator: float, denominator: int) -> float:
-    
-    """
-    Converts a fraction to decimal odds.    
     Parameters
     ---------
-    numerator: float 
-        Numerator of fraction
-    denominator: int 
-        Denominator of fraction    
+    path: str
+        absolut path to directory where csv is saved
+
+    csv_name: str
+        name of cluster csv
+
     Returns
     -------
-    float: The decimal odds of the fraction.
-    """
-    
-    # Add 1 to the numerator to account for the fact that the probability of
-    # winning a bet with decimal odds of x is 1/x.    
-    return numerator / denominator + 1
-
-def decimal_odds_to_percentage(decimal_odds) -> float:
-    
-    """
-    Converts a decimal odds to a percentage.    
-    Parameters
-    ----------
-    decimal_odds: float 
-        The decimal odds to convert.    
-    Returns
-    -------
-    percentage: float 
-        The percentage equivalent of the decimal odds.
-    """    
-    
-    percentage = 100 * (1/decimal_odds)
-    return percentage
-
-def bayes_factor_upper_bound(p):
-    
+    pd.DataFrame of cluster csv
     '''
-    Function to calculate bayes factor upper bound
-    and probability of null and alterantive hypothesis
-
-    1/-ep log p
-
-    where e is natural base
-    p is p value
-    and log is natural log
-
-    Parameters
-    -----------
-    p: float
-        p-value
-
-    Returns
-    -------
-    dict: dictionary object
-        dictionary of bayes factor upper bound
-        and probabilities
-
-    '''
-
-    bfb = bf_upper_bound(p)
-    decimal_odds = fraction_to_decimal_odds(bfb, 1) # odds are null hypothesis
-    percentage = decimal_odds_to_percentage(decimal_odds)
-    
-    # This if else needed as probabilities for alternative
-    # and null flip once p hits about 0.36. At this point
-    # the bayes factor bound becomes negative for ease of interpretation
-    # as the hypothesis switches 
-    
-
-    if p >= 0.36:
-        alternative_prob = percentage
-        null_prob = 100-percentage
-        bfb = -abs(bfb)
-    else:
-        alternative_prob = 100-percentage
-        null_prob = percentage
-    return {
-        'BFB': bfb,
-        'null_hypothesis_probabilty': round(null_prob, 4),
-        'alternative_hypothesis_probabilty': round(alternative_prob, 4),
-        'odds': decimal_odds
-    }
+    try:
+        df = pd.read_csv(f'{path}/{csv_name}')
+        cols = ['cluster_id', 'peak_x', 'peak_y', 'peak_z',	'volume_mm',  'pval', 'BFB', 'odds', 'null_proability' ,'harvard_oxford', 'aal']
+        df =  bayesian_cluster_info(df)
+        return df[cols]
+    except Exception:
+        print('No Significant Clusters')
 
 def correlation(behaviour:pd.DataFrame, volume:pd.DataFrame, volume_name:str) -> dict:
     
@@ -601,68 +522,3 @@ def correlation(behaviour:pd.DataFrame, volume:pd.DataFrame, volume_name:str) ->
         values['correlation'][beh] = corr
         values['bayesian'][beh] = bayes_factor_upper_bound(pvals)
     return values
-
-
-def bayesian_cluster_info(csv_file: pd.DataFrame) -> pd.DataFrame:
-    
-    '''
-    Function to calculate bayes factor bound, odds 
-    and probability of null hypothesis
-
-    Parameters
-    ----------
-    csv_file: pd.DataFrame
-        DataFrame with cluster information
-
-    Returns
-    -------
-    csv_file: pd.DataFrame 
-        csv_file with additional bfb, odds 
-        and probability of null hypothesis 
-    
-    '''
-    
-    csv_file['BFB'] = csv_file['pval'].apply(lambda p: bayes_factor_upper_bound(p)['BFB'])
-    csv_file['odds'] = csv_file['pval'].apply(lambda p: bayes_factor_upper_bound(p)['odds'])
-    csv_file['null_proability'] = csv_file['pval'].apply(lambda p: bayes_factor_upper_bound(p)['null_hypothesis_probabilty'])
-    return csv_file
-    
-def load_cluster_csv(path: str, csv_name: str) -> pd.DataFrame:
-
-    '''
-    Function to load the cluster csv. Returns csv
-    or prints no significant clusters 
-
-    Parameters
-    ---------
-    path: str
-        absolut path to directory where csv is saved
-
-    csv_name: str
-        name of cluster csv
-
-    Returns
-    -------
-    pd.DataFrame of cluster csv
-    '''
-    try:
-        df = pd.read_csv(f'{path}/{csv_name}')
-        cols = ['cluster_id', 'peak_x', 'peak_y', 'peak_z',	'volume_mm',  'pval', 'BFB', 'odds', 'null_proability' ,'harvard_oxford', 'aal']
-        df =  bayesian_cluster_info(df)
-        return df[cols]
-    except Exception:
-        print('No Significant Clusters')
-
-def decimal_to_odds(probability: float) -> float:
-    
-    """
-    Converts a decimal probability to odds.    
-    Parameters
-    ----------
-    probability: float 
-        The decimal probability.    
-    Returns:
-      odds: float.
-    """
-    
-    return probability / (1 - probability)
