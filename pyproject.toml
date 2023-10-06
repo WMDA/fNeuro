@@ -19,7 +19,7 @@ classifiers = [
 keywords = ["neuroimaging"]
 
 dependencies = [
-    'cyclicityanalysis @ git+https://github.com/vskaush2/cyclicityanalysis.git'
+    'cyclicityanalysis @ git+https://github.com/vskaush2/cyclicityanalysis.git',
     'nilearn',
     'scipy',
     'numpy',
