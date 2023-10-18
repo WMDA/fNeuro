@@ -199,3 +199,97 @@ def cyclic_order(lead_lag_df: pd.DataFrame, order: int) -> pd.DataFrame:
     })
     order_df = pd.DataFrame(sequential_order_dict.values()).rename(columns={0: 'regions'})
     return pd.merge(df, order_df, how='right', on='regions')
+
+
+def get_network_names(msdl_overview_df: pd.DataFrame, df: pd.DataFrame) -> list:
+    
+    '''
+    Function to return network names
+
+    Parameters
+    ----------
+    msdl_overview_df: pd.DataFrame
+        Dataframe with labels and networks 
+    df: pd.DataFrame
+        long form df with correlations, 
+
+    Returns
+    -------
+    network_names: list
+        list of network names
+
+    '''
+    
+    network_names = []
+    for correlation in df['corr_names']:
+        splitted_name = correlation.split('-')
+        region_one = splitted_name[0].rstrip()
+        region_two = splitted_name[1].lstrip()
+        network_one = msdl_overview_df[msdl_overview_df['labels'] == region_one]['networks'].values[0]
+        network_two = msdl_overview_df[msdl_overview_df['labels'] == region_two]['networks'].values[0]
+        network_names.append(f"{network_one} - {network_two}")
+    return network_names
+
+def get_correlation_long_df(correlation_matrix, msdl_overview_df):
+    
+    '''
+    Function to turn a correlation matrix into a long form
+    dataframe. Currently specific to the msdl atlas
+
+    Parameters
+    ----------
+    Correlation matrix: pd.DataFrame
+        Correlation matrix that is labeled
+
+    msdl_overview_df: pd.DataFrame
+        Dataframe with labels and networks 
+
+    Returns
+    -------
+    df: pd.DataFrame
+        long form df with correlations, named 
+        regions and networks
+
+    '''
+
+    df_corr = correlation_matrix.where(np.tril(correlation_matrix).astype(bool))
+    df = df_corr.stack().reset_index().rename(columns={0: 'correlation'})
+    df['corr_names'] = df['level_1'] + ' - ' + df['level_0']
+    df = df.drop(df[df['level_0'] == df['level_1']].index).drop(columns=['level_0', 'level_1'])
+    df = df[df.columns[::-1]]
+    network_names = get_network_names(msdl_overview_df, df)
+    df['network_names'] = network_names
+    return df
+
+def get_mean_correlation_matrix(group: np.array, labels: list):
+    
+    '''
+    Function to get mean correlation matrix from group time series
+
+    Parameters
+    ----------
+    group: np.array
+        array of time series
+    
+    labels: list
+        list of labels
+
+    Returns
+    -------
+    dict: dictionary object
+        dict of two dataframes of mean AN and HC 
+        correlation matrix as DataFrames 
+    '''
+    
+    full_correlation_matrix = Cyclic_analysis(to_vectorize=False).fit(group)
+    an_mean_correlations = pd.DataFrame(full_correlation_matrix[0:65].mean(axis=0))
+    an_mean_correlations.columns = labels
+    an_mean_correlations.index = labels
+    hc_mean_correlations = pd.DataFrame(full_correlation_matrix[65:].mean(axis=0))
+    hc_mean_correlations.columns = labels
+    hc_mean_correlations.index = labels
+
+    return {
+        'an_mean_correlations': an_mean_correlations,
+        'hc_mean_correlations': hc_mean_correlations
+    }
