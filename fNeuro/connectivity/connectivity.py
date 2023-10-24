@@ -1,5 +1,4 @@
 import numpy as np
-import cyclicityanalysis.orientedarea as cao
 import cyclicityanalysis.coom as coom
 import pandas as pd
 
@@ -19,6 +18,31 @@ class Cyclic_analysis:
 
         '''
         self.to_vectorize = to_vectorize
+    
+    def lead_lag_matrix(self, array) -> np.array:     
+        '''
+        Function to calculate the lead lag
+        matrix for cyclic analysis. 
+
+        Based on 
+        A := ½  ∫i x(t)(x'(t))T - x(t)(x'(t))T dt
+
+        Parameters
+        ---------
+        array: np.array
+            2D matrix
+        
+        Returns
+        -------
+        np.array: array
+            Lead lag matrix
+    
+        '''
+    
+        X = pd.DataFrame(array)
+        diff = X.diff() # df.diff needed as np.diff removes nan and dimensions don't match
+        A = X[:-1].T @ diff.values[1:]
+        return np.array(0.5 * (A - A.T))
 
     def remove_diagonals(self, array) -> np.array:
         '''
@@ -33,7 +57,7 @@ class Cyclic_analysis:
         Returns
         -------
         np.array: array
-            2D matrix 
+            1D matrix 
         '''
         return array[~np.eye(len(array), dtype=bool)].reshape(len(array), -1) 
 
@@ -67,17 +91,17 @@ class Cyclic_analysis:
         
         Returns
         -------
-        np.array: 1D numpy array
+        np.array: 1D/2D numpy array
             array of lower triangluation of a matrix
+            if self.vectorize set to true
+            else returns 2D array
         '''
-    
-        df = pd.DataFrame(time_series)
-        oriented_area = cao.OrientedArea(df)
-        lead_lag_df = oriented_area.compute_lead_lag_df()
+        lead_lag = self.lead_lag_matrix(time_series)
+
         if self.to_vectorize == True:
-            return self.vectorize(lead_lag_df.values)
+            return self.vectorize(lead_lag)
         else:
-            return lead_lag_df.values
+            return lead_lag
     
     def fit(self, time_series: np.array) -> np.array:
     
