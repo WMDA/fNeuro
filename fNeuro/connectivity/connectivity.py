@@ -1,5 +1,4 @@
 import numpy as np
-import cyclicityanalysis.coom as coom
 import pandas as pd
 
 class Cyclic_analysis:
@@ -188,42 +187,6 @@ def connectome_plotting(df: pd.DataFrame, column: str, labels: pd.DataFrame ) ->
         'adj': adj,
         'coords': coords
         }
-
-def cyclic_order(lead_lag_df: pd.DataFrame, order: int) -> pd.DataFrame:
-
-    '''
-    Function to determine the sequential order of 
-    time-series
-
-    Parameters
-    ----------
-    lead_lag_df: pd.DataFrame
-        lead lag correlation 
-        matrix
-
-    order: int
-        order
-
-    Returns
-    -------
-    pd.DataFrame: Dataframe
-        DataFrame ordered by sequential order
-        with eigenvalue moduli, leading eigenvector
-        and leading eigenvector component phases
-    
-    '''
-
-    eigen = coom.COOM(lead_lag_df)
-    leading_eigenvector,leading_eigenvector_component_phases, sequential_order_dict = eigen.compute_sequential_order(order)
-    df = pd.DataFrame(data={
-        'regions': lead_lag_df.columns,
-        'eigenvalue_moduli': eigen.eigenvalue_moduli,
-        'leading_eigenvector': leading_eigenvector,
-        'leading_eigenvector_component_phases': leading_eigenvector_component_phases,
-    })
-    order_df = pd.DataFrame(sequential_order_dict.values()).rename(columns={0: 'regions'})
-    return pd.merge(df, order_df, how='right', on='regions')
-
 
 def get_network_names(msdl_overview_df: pd.DataFrame, df: pd.DataFrame) -> list:
     

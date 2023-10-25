@@ -19,7 +19,6 @@ classifiers = [
 keywords = ["neuroimaging"]
 
 dependencies = [
-    'cyclicityanalysis @ git+https://github.com/vskaush2/cyclicityanalysis.git',
     'nilearn',
     'scipy',
     'numpy',
@@ -28,4 +27,4 @@ dependencies = [
     'scikit-learn',
     'SQLAlchemy'
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.9"
