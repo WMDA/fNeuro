@@ -18,31 +18,46 @@ class Cyclic_analysis:
 
         '''
         self.to_vectorize = to_vectorize
-    
-    def lead_lag_matrix(self, array) -> np.array:     
-        '''
-        Function to calculate the lead lag
-        matrix for cyclic analysis. 
-
-        Based on 
-        A := ½  ∫i x(t)(x'(t))T - x(t)(x'(t))T dt
-
-        Parameters
-        ---------
-        array: np.array
-            2D matrix
         
+    def areaval(self, x: np.array, y: np.array) -> float:
+        '''
+        Function to Compute areavalue between two vectors.
+    
+        Parameters
+        ----------
+        x: np.array
+            array of x values
+        y: np.array 
+            array of y values 
+    
+        Returns
+        -------
+        float: float number
+            float value of area value
+        '''
+        return (np.dot(x, np.diff(np.concatenate((y[-1:], y)))) - np.dot(y, np.diff(np.concatenate((x[-1:], x))))) / 2
+    
+    def lead_lag_matrix(self, arr: np.array) -> np.array:
+        '''
+        Function to make lead lag matrix
+    
+        Parameters
+        ----------
+        arr: np.array
+            array of time series
+    
         Returns
         -------
         np.array: array
-            Lead lag matrix
-    
+            lead lag matrix
         '''
-    
-        X = pd.DataFrame(array)
-        diff = X.diff() # df.diff needed as np.diff removes nan and dimensions don't match
-        A = X[:-1].T @ diff.values[1:]
-        return np.array(0.5 * (A - A.T))
+        N = arr.shape[1]
+        lead_lag_matrix = np.zeros((N, N), dtype=arr.dtype)
+        for index, index_col in enumerate(arr.T):
+            for y_value in range(index+1, N):
+                lead_lag_matrix[index, y_value] = self.areaval(index_col, arr[:, y_value])
+                lead_lag_matrix[y_value, index] = -lead_lag_matrix[index, y_value]
+        return lead_lag_matrix
 
     def remove_diagonals(self, array) -> np.array:
         '''
