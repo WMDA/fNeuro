@@ -204,7 +204,7 @@ def connectome_plotting(df: pd.DataFrame, column: str, labels: pd.DataFrame ) ->
         'coords': coords
         }
 
-def cyclic_order(lead_lag_df: pd.DataFrame, order: int) -> pd.DataFrame:
+def cyclic_order(lead_lag_df: pd.DataFrame, order: int=0) -> pd.DataFrame:
 
     '''
     Function to determine the sequential order of 
@@ -333,3 +333,20 @@ def get_mean_correlation_matrix(group: np.array, labels: list):
         'hc_mean_correlations': hc_mean_correlations
     }
 
+def eigen_values(connectome_dictionary: dict, labels: list) -> dict:
+    
+    '''
+    Function to get the eigen values and cylic ordering
+    from lead lag matricies
+
+    Parameters
+    ----------
+    connectome_dictionary dict
+        dictionary of lead lag matricies
+    labels: list
+        list of regions to rename columns
+
+    '''
+    return dict(zip(connectome_dictionary.keys(),
+                    map(cyclic_order, list(map(lambda dataframe: pd.DataFrame(dataframe, columns=labels), 
+                                            connectome_dictionary.values())))))
