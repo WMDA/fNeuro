@@ -67,3 +67,4 @@ def seggregate_networks(network_values: dict):
         'within_df': pd.concat(within_df).sort_values(by='svr_values',key=abs, ascending=False).reset_index(drop=True),
         'between_df': pd.concat(between_df).sort_values(by='svr_values',key=abs, ascending=False).reset_index(drop=True)
     }
+

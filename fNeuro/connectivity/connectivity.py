@@ -1,5 +1,6 @@
 import numpy as np
 import cyclicityanalysis.coom as coom
+import cyclicityanalysis.orientedarea as cao
 import pandas as pd
 
 class Cyclic_analysis:
@@ -293,7 +294,7 @@ def get_correlation_long_df(correlation_matrix, msdl_overview_df):
 
     df_corr = correlation_matrix.where(np.tril(correlation_matrix).astype(bool))
     df = df_corr.stack().reset_index().rename(columns={0: 'correlation'})
-    df['corr_names'] = df['level_1'] + ' - ' + df['level_0']
+    df['corr_names'] = df['level_0'] + ' - ' + df['level_1']
     df = df.drop(df[df['level_0'] == df['level_1']].index).drop(columns=['level_0', 'level_1'])
     df = df[df.columns[::-1]]
     network_names = get_network_names(msdl_overview_df, df)
@@ -350,3 +351,35 @@ def eigen_values(connectome_dictionary: dict, labels: list) -> dict:
     return dict(zip(connectome_dictionary.keys(),
                     map(cyclic_order, list(map(lambda dataframe: pd.DataFrame(dataframe, columns=labels), 
                                             connectome_dictionary.values())))))
+
+def node_relationship(within_string: str, between_string: str, 
+                      time_series_dataframe: pd.DataFrame) -> dict:
+
+    '''
+    Get the node relationship between withn 
+    and between network nodes
+    
+    Parameters
+    ----------
+    within_string: str
+        string of two regions
+    
+    between_string: str
+        string of two regions
+    
+    Returns
+    -------
+    dict: dictionary 
+        dict of between and 
+        within relationships
+
+    '''
+    import warnings
+    warnings.simplefilter(action='ignore', category=FutureWarning) # Needed for pandas warning
+    region_1 = [between_string.split('-')[0].rstrip(), within_string.split('-')[0].rstrip()]
+    region_2 = [between_string.split('-')[1].lstrip(), within_string.split('-')[1].lstrip()]
+    oreintated_area = cao.OrientedArea(time_series_dataframe)
+    return {
+        'between_relationship': oreintated_area.compute_pairwise_accumulated_oriented_area_df(region_1[0], region_2[0]),
+        'within_relationship': oreintated_area.compute_pairwise_accumulated_oriented_area_df(region_1[1], region_2[1])
+    }
